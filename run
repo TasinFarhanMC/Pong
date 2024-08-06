@@ -1,0 +1,5 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(dirname "$(pwd)/$0")
+cd $SCRIPT_DIR
+cmake -B build && bear -- make -C build -j4 && $SCRIPT_DIR/bin/Pong
