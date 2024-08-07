@@ -1,10 +1,12 @@
 #include "scene.hpp"
+#include <callbacks.hpp>
 #include <core.hpp>
 
 #include <iostream>
 
-static void update(float delta_t) { std::cout << 1.0f / delta_t << std::endl; }
+static void update(float delta_t) {}
+static void update_gl() {}
 
 namespace scene {
-const Type PLAYGROUND{core::nop, core::null, update, core::null, core::null};
+const Type PLAYGROUND{core::nop, core::null, update, update_gl, core::null};
 }

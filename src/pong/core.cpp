@@ -1,4 +1,5 @@
 #include "core.hpp"
+#include <callbacks.hpp>
 #include <scene/scene.hpp>
 
 #include <glad/glad.h>
@@ -38,23 +39,31 @@ int main() {
     cur_scene->render();
     scene_mutex.unlock_shared();
     glfwSwapBuffers(window);
-    glfwPollEvents();
 
     static auto start_t = std::chrono::steady_clock::now();
     static auto end_t = start_t;
     static float diff_t = 0.0f;
 
     if (diff_t > core::TICK_RATE_NANO) {
+      glfwPollEvents();
       cur_scene->update_gl();
+
+      if (callback::key::get_state(callback::key::State::Press, GLFW_KEY_F11)) {
+        GLFWmonitor *mon = (glfwGetWindowMonitor(window) == nullptr)
+                               ? glfwGetPrimaryMonitor()
+                               : nullptr;
+
+        glfwSetWindowMonitor(window, mon, 0, 0, 100, 100, GLFW_DONT_CARE);
+      }
+
       diff_t -= core::TICK_RATE_NANO;
     }
 
     end_t = std::chrono::steady_clock::now();
     auto delta_nano = (end_t - start_t).count();
     diff_t += delta_nano;
-    delta_mutex.lock();
+    std::lock_guard<std::mutex> lock(delta_mutex);
     delta_t = delta_nano / 1000000000.0f;
-    delta_mutex.unlock();
     start_t = end_t;
   }
   update_thread.join();
@@ -95,9 +104,9 @@ bool init() {
     return false;
   }
 
-  glfwSwapInterval(0);
   glfwSetWindowCloseCallback(window,
                              reinterpret_cast<GLFWwindowclosefun>(close));
+  glfwSetKeyCallback(window, callback::key::fun);
 
   for (const auto s : scene::REFS) {
     if (!s->init()) {
