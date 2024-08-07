@@ -1,4 +1,4 @@
 build/
 out/
-run
+/make
 compile_commands.json

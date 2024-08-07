@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4...3.25 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5...3.25 FATAL_ERROR)
 project(PONG C CXX)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)

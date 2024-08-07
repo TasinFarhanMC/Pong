@@ -23,6 +23,14 @@ add_library(
 
 find_package(Threads REQUIRED)
 
+set_target_properties(
+  glfw
+  PROPERTIES POSITION_INDEPENDENT_CODE ON
+             C_STANDARD 99
+             C_EXTENSIONS OFF
+             DEFINE_SYMBOL _GLFW_BUILD_DLL
+             FOLDER "GLFW3")
+
 # The time, thread and module code is shared between all backends on a given OS,
 # including the null backend, which still needs those bits to be functional
 if(APPLE)

@@ -1,0 +1,31 @@
+#!/bin/bash
+
+cd $(dirname $0)
+
+CMAKE_CMD="cmake . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+
+for arg in $@; do
+  case $arg in
+    "-r")
+      eval $CMAKE_CMD
+      STATUS_CODE=$?
+      break
+    ;;
+    "-f")
+      eval "$CMAKE_CMD --fresh"
+      STATUS_CODE=$?
+      break
+    ;;
+    "-b")
+      rm build -rf
+      eval $CMAKE_CMD
+      STATUS_CODE=$?
+      break
+    ;;
+    *)
+      STATUS_CODE=0
+    ;;
+  esac
+done
+
+[[ $STATUS_CODE -eq 0 ]] && ninja -C build -j6 && out/pong
