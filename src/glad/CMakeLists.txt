@@ -1,4 +1,4 @@
-add_library(glad STATIC glad.c "${CMAKE_SOURCE_DIR}/include/glad/glad.h")
+add_library(glad STATIC glad.c "${CMAKE_SOURCE_DIR}/include/glad/glad/glad.h")
 
 find_package(OpenGL REQUIRED)
 

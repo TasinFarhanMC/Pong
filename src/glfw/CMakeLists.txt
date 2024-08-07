@@ -1,7 +1,7 @@
 add_library(
   glfw STATIC
-  "${CMAKE_SOURCE_DIR}/include/GLFW/glfw3.h"
-  "${CMAKE_SOURCE_DIR}/include/GLFW/glfw3native.h"
+  "${CMAKE_SOURCE_DIR}/include/glfw/glfw/glfw3.h"
+  "${CMAKE_SOURCE_DIR}/include/glfw/glfw/glfw3native.h"
   internal.h
   platform.h
   mappings.h
@@ -159,9 +159,7 @@ endif()
 
 set(GLFW_LIB_NAME_SUFFIX "")
 
-target_include_directories(
-  glfw PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
-              "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+target_include_directories(glfw PUBLIC "${CMAKE_SOURCE_DIR}/include/glfw")
 target_include_directories(glfw PRIVATE "${CMAKE_SOURCE_DIR}/src/glfw"
                                         "${CMAKE_BINARY_DIR}/src/glfw")
 target_link_libraries(glfw PRIVATE Threads::Threads)
