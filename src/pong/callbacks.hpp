@@ -2,4 +2,4 @@
 
 #include <GLFW/glfw3.h>
 
-namespace Callbacks {}
+namespace callbacks {}

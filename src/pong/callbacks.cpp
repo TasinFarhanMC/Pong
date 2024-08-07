@@ -1,3 +1,3 @@
 #include "callbacks.hpp"
 
-namespace Callbacks {} // namespace Callbacks
+namespace callbacks {} // namespace Callbacks

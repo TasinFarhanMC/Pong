@@ -1,5 +1,5 @@
-add_executable(pong main.cpp main.hpp callbacks.cpp callbacks.hpp scene.hpp
-                    Scenes/playground.cpp)
+add_executable(pong core.cpp core.hpp callbacks.cpp callbacks.hpp
+                    scene/scene.hpp scene/playground.cpp)
 
 set_target_properties(
   pong

@@ -53,19 +53,7 @@ if(MSVC AND NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
   endif()
 endif()
 
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE
-      Debug
-      CACHE STRING "Build type")
-endif()
-
-if(MSVC)
-  add_compile_options("$<$<CONFIG:Debug>:/Zi;/W4;/MDd>"
-                      "$<$<CONFIG:Release>:/O2;/W4;/MD>")
-else()
-  add_compile_options("$<$<CONFIG:Debug>:-g;-O0;-Wall;-Wextra;-Wpedantic>"
-                      "$<$<CONFIG:Release>:-O3;-static>")
-endif()
+add_compile_options(-g;-O0;-Wall;-Wextra;-Wpedantic)
 
 add_subdirectory(src/glad)
 add_subdirectory(src/glfw)
