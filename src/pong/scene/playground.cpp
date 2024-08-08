@@ -1,12 +1,13 @@
 #include "scene.hpp"
 #include <callbacks.hpp>
 #include <core.hpp>
+#include <render/shader.hpp>
 
 #include <glad/glad.h>
 
 #include <iostream>
 
-static GLuint vbo, vao, shader;
+static GLuint vbo, vao;
 
 static auto vert_src = R"(
   #version 330 core
@@ -28,59 +29,12 @@ static auto frag_src = R"(
   }
 )";
 
+static Shader shader(vert_src, frag_src);
+
 static bool init() {
-  GLuint vert = glCreateShader(GL_VERTEX_SHADER);
-  GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
-
-  glShaderSource(vert, 1, &vert_src, nullptr);
-  glShaderSource(frag, 1, &frag_src, nullptr);
-
-  glCompileShader(vert);
-  GLint vertCompiled;
-  glGetShaderiv(vert, GL_COMPILE_STATUS, &vertCompiled);
-  if (!vertCompiled) {
-    GLint length;
-    glGetShaderiv(vert, GL_INFO_LOG_LENGTH, &length);
-    char *log = new char[length];
-    glGetShaderInfoLog(vert, length, &length, log);
-    std::cerr << "Vertex shader compile error: " << log << std::endl;
-    delete[] log;
+  if (!shader.init()) {
+    return false;
   }
-
-  glCompileShader(frag);
-  GLint fragCompiled;
-  glGetShaderiv(frag, GL_COMPILE_STATUS, &fragCompiled);
-  if (!fragCompiled) {
-    GLint length;
-    glGetShaderiv(frag, GL_INFO_LOG_LENGTH, &length);
-    char *log = new char[length];
-    glGetShaderInfoLog(frag, length, &length, log);
-    std::cerr << "Fragment shader compile error: " << log << std::endl;
-    delete[] log;
-  }
-
-  shader = glCreateProgram();
-
-  glAttachShader(shader, vert);
-  glAttachShader(shader, frag);
-
-  glLinkProgram(shader);
-  GLint programLinked;
-  glGetProgramiv(shader, GL_LINK_STATUS, &programLinked);
-  if (!programLinked) {
-    GLint length;
-    glGetProgramiv(shader, GL_INFO_LOG_LENGTH, &length);
-    char *log = new char[length];
-    glGetProgramInfoLog(shader, length, &length, log);
-    std::cerr << "Program link error: " << log << std::endl;
-    delete[] log;
-  }
-
-  // No need for glValidateProgram
-  // glValidateProgram(shader);
-
-  glDeleteShader(vert);
-  glDeleteShader(frag);
 
   glGenVertexArrays(1, &vao);
   glGenBuffers(1, &vbo);
@@ -113,7 +67,7 @@ static void update(float delta_t) {}
 static void clean() {
   glDeleteVertexArrays(1, &vao);
   glDeleteBuffers(1, &vbo);
-  glDeleteProgram(shader);
+  shader.clean();
 }
 
 namespace scene {

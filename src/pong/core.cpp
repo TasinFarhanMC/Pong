@@ -1,27 +1,121 @@
+#define GLFW_INCLUDE_NONE
+
 #include "core.hpp"
 #include <callbacks.hpp>
 #include <scene/scene.hpp>
 
 #include <glad/glad.h>
 
-#include <atomic>
 #include <chrono>
 #include <iostream>
-#include <mutex>
-#include <shared_mutex>
 #include <thread>
 
 namespace core {
-static std::shared_mutex scene_mutex;
-static const scene::Type *cur_scene = &scene::PLAYGROUND;
-static std::mutex delta_mutex;
+namespace tm = std::chrono;
+
+static bool running = true;
 static float delta_t = 0.0f;
-static std::atomic<bool> running = true;
 
-static bool init();
-static void update();
-
+static const scene::Type *cur_scene = &scene::PLAYGROUND;
+glm::ivec2 screen_size;
 GLFWwindow *window = nullptr;
+GLFWmonitor *monitor = nullptr;
+
+static bool init() {
+  if (!glfwInit()) {
+    std::cerr << "Unable to init glfw" << std::endl;
+    return false;
+  }
+
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+  monitor = glfwGetPrimaryMonitor();
+
+  auto vid_mode = glfwGetVideoMode(monitor);
+  screen_size.x = vid_mode->width;
+  screen_size.y = vid_mode->height;
+
+  window = glfwCreateWindow(screen_size.x * 2 / 3, screen_size.y * 2 / 3,
+                            "Pong", nullptr, nullptr);
+  if (!window) {
+    std::cerr << "Unable to create window" << std::endl;
+
+    glfwTerminate();
+    return false;
+  }
+
+  glfwMakeContextCurrent(window);
+  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+    std::cerr << "Unable to init glad" << std::endl;
+
+  EXIT_GLFW:
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    return false;
+  }
+
+  glfwSetWindowPos(window, screen_size.x / 6, screen_size.y / 6);
+
+  glfwSetWindowCloseCallback(window,
+                             reinterpret_cast<GLFWwindowclosefun>(close));
+  glfwSetKeyCallback(window, callback::key::fun);
+  glfwSetFramebufferSizeCallback(window, callback::vidmode);
+
+  for (const auto s : scene::REFS) {
+    if (!s->init()) {
+      goto EXIT_GLFW;
+    }
+  }
+
+  return true;
+}
+
+static void render() {
+  auto start_t = tm::steady_clock::now();
+  auto end_t = start_t;
+  long acc_t = 0;
+
+  while (running) {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    cur_scene->render();
+    glfwSwapBuffers(window);
+
+    if (acc_t > core::TICK_RATE_NANO) {
+      glfwPollEvents();
+      acc_t -= core::TICK_RATE_NANO;
+    }
+
+    end_t = tm::steady_clock::now();
+    acc_t += (end_t - start_t).count();
+    delta_t = tm::duration<float>(end_t - start_t).count();
+    start_t = end_t;
+  }
+}
+
+static void update() {
+  auto start_t = tm::steady_clock::now();
+  auto end_t = start_t;
+  long acc_t = 0;
+
+  while (running) {
+    if (acc_t > core::TICK_RATE_NANO) {
+      cur_scene->update(delta_t);
+      acc_t -= core::TICK_RATE_NANO;
+    }
+
+    end_t = tm::steady_clock::now();
+    acc_t += (end_t - start_t).count();
+    start_t = end_t;
+  }
+}
+
+void set_scene(scene::Type *s) { cur_scene = s; }
+void close() { running = false; }
+bool nop() { return true; }
+void null() {}
 } // namespace core
 
 int main() {
@@ -32,40 +126,7 @@ int main() {
   }
 
   std::thread update_thread(update);
-  while (running.load(std::memory_order_acquire)) {
-    glClear(GL_COLOR_BUFFER_BIT);
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    scene_mutex.lock_shared();
-    cur_scene->render();
-    scene_mutex.unlock_shared();
-    glfwSwapBuffers(window);
-
-    static auto start_t = std::chrono::steady_clock::now();
-    static auto end_t = start_t;
-    static float diff_t = 0.0f;
-
-    if (diff_t > core::TICK_RATE_NANO) {
-      glfwPollEvents();
-      cur_scene->update_gl();
-
-      if (callback::key::get_state(callback::key::State::Press, GLFW_KEY_F11)) {
-        GLFWmonitor *mon = (glfwGetWindowMonitor(window) == nullptr)
-                               ? glfwGetPrimaryMonitor()
-                               : nullptr;
-
-        glfwSetWindowMonitor(window, mon, 0, 0, 100, 100, GLFW_DONT_CARE);
-      }
-
-      diff_t -= core::TICK_RATE_NANO;
-    }
-
-    end_t = std::chrono::steady_clock::now();
-    auto delta_nano = (end_t - start_t).count();
-    diff_t += delta_nano;
-    std::lock_guard<std::mutex> lock(delta_mutex);
-    delta_t = delta_nano / 1000000000.0f;
-    start_t = end_t;
-  }
+  render();
   update_thread.join();
 
   for (const auto s : scene::REFS) {
@@ -77,73 +138,3 @@ int main() {
 
   return 0;
 }
-
-namespace core {
-bool init() {
-  if (!glfwInit()) {
-    std::cerr << "Unable to init glfw" << std::endl;
-    return false;
-  }
-
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-  window = glfwCreateWindow(100, 100, "Pong", nullptr, nullptr);
-  if (!window) {
-    std::cerr << "Unable to create window" << std::endl;
-    glfwTerminate();
-    return false;
-  }
-  glfwMakeContextCurrent(window);
-
-  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    std::cerr << "Unable to init glad" << std::endl;
-    glfwDestroyWindow(window);
-    glfwTerminate();
-    return false;
-  }
-
-  glfwSetWindowCloseCallback(window,
-                             reinterpret_cast<GLFWwindowclosefun>(close));
-  glfwSetKeyCallback(window, callback::key::fun);
-
-  for (const auto s : scene::REFS) {
-    if (!s->init()) {
-      glfwDestroyWindow(window);
-      glfwTerminate();
-      return false;
-    }
-  }
-
-  return true;
-}
-
-void update() {
-  auto start_t = std::chrono::steady_clock::now();
-  auto end_t = start_t;
-  float diff_t = 0.0f;
-
-  while (running.load(std::memory_order_acquire)) {
-    if (diff_t > core::TICK_RATE_NANO) {
-      std::shared_lock<std::shared_mutex> lock1(scene_mutex);
-      std::lock_guard<std::mutex> lock2(delta_mutex);
-      cur_scene->update(delta_t);
-      diff_t -= core::TICK_RATE_NANO;
-    }
-
-    end_t = std::chrono::steady_clock::now();
-    diff_t += (end_t - start_t).count();
-    start_t = end_t;
-  }
-}
-
-void set_scene(scene::Type *s) {
-  std::lock_guard<std::shared_mutex> lock(scene_mutex);
-  cur_scene = s;
-}
-
-void close() { running.store(false, std::memory_order_release); }
-void null() {}
-bool nop() { return true; }
-} // namespace core

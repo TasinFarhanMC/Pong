@@ -1,10 +1,22 @@
-#include <scene.hpp>
+#include "scene.hpp"
+#include <callbacks.hpp>
+#include <core.hpp>
+#include <render/shader.hpp>
+
+#include <glad/glad.h>
+
+#include <iostream>
 
 static void init() {}
+
 static void render() {}
+
 static void update(float delta_t) {}
+
+static void update_gl() {}
+
 static void clean() {}
 
-namespace Scene {
-Scene_t scene{init, render, update, clean};
+namespace scene {
+Type SCENE_X{init, render, update, update_gl, clean};
 }
