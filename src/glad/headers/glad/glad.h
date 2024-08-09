@@ -47,12 +47,12 @@
 extern "C" {
 #endif
 
-struct gladGLversionStruct {
+struct GladGLVersionStruct {
     int major;
     int minor;
 };
 
-typedef void* (* GLADloadproc)(const char *name);
+typedef void* (* GladLoadProc)(const char *name);
 
 #ifndef GLAPI
 # if defined(GLAD_GLAPI_EXPORT)
@@ -80,11 +80,11 @@ typedef void* (* GLADloadproc)(const char *name);
 # endif
 #endif
 
-GLAPI struct gladGLversionStruct GLVersion;
+GLAPI struct GladGLVersionStruct GLVersion;
 
-GLAPI int gladLoadGL(void);
+GLAPI int glad_load_gl(void);
 
-GLAPI int gladLoadGLLoader(GLADloadproc);
+GLAPI int glad_load_gl_loader(GladLoadProc);
 
 
 #define GLAD_DEBUG
@@ -95,7 +95,7 @@ GLAPI void glad_set_post_callback_gl(GLADcallback cb);
 
 GLAPI void glad_set_pre_callback(GLADcallback cb);
 GLAPI void glad_set_post_callback(GLADcallback cb);
-#include <KHR/khrplatform.h>
+#include "../KHR/khrplatform.h"
 typedef unsigned int GLenum;
 typedef unsigned char GLboolean;
 typedef unsigned int GLbitfield;

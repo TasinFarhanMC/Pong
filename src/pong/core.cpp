@@ -11,15 +11,13 @@
 #include <thread>
 
 namespace core {
-namespace tm = std::chrono;
+static volatile bool running = true;
+static SecondDecimal delta(0);
+static const scene::Object *current_scene = &scene::PLAYGROUND;
 
-static bool running = true;
-static float delta_t = 0.0f;
-
-static const scene::Type *cur_scene = &scene::PLAYGROUND;
-glm::ivec2 screen_size;
-GLFWwindow *window = nullptr;
-GLFWmonitor *monitor = nullptr;
+IVec2 screen_size;
+GLFWwindow *window;
+GLFWmonitor *monitor;
 
 static bool init() {
   if (!glfwInit()) {
@@ -37,8 +35,8 @@ static bool init() {
   screen_size.x = vid_mode->width;
   screen_size.y = vid_mode->height;
 
-  window = glfwCreateWindow(screen_size.x * 2 / 3, screen_size.y * 2 / 3,
-                            "Pong", nullptr, nullptr);
+  window = glfwCreateWindow(screen_size.x * 2 / 3, screen_size.y * 2 / 3, TITLE,
+                            nullptr, nullptr);
   if (!window) {
     std::cerr << "Unable to create window" << std::endl;
 
@@ -47,7 +45,8 @@ static bool init() {
   }
 
   glfwMakeContextCurrent(window);
-  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+  if (!glad_load_gl_loader(
+          reinterpret_cast<GladLoadProc>(glfwGetProcAddress))) {
     std::cerr << "Unable to init glad" << std::endl;
 
   EXIT_GLFW:
@@ -63,8 +62,8 @@ static bool init() {
   glfwSetKeyCallback(window, callback::key::fun);
   glfwSetFramebufferSizeCallback(window, callback::vidmode);
 
-  for (const auto s : scene::REFS) {
-    if (!s->init()) {
+  for (const auto scene : scene::REFERENCES) {
+    if (!scene->init()) {
       goto EXIT_GLFW;
     }
   }
@@ -73,46 +72,46 @@ static bool init() {
 }
 
 static void render() {
-  auto start_t = tm::steady_clock::now();
-  auto end_t = start_t;
-  long acc_t = 0;
+  TimePoint<SteadyClock, NanoSecond> start = SteadyClock::now();
+  TimePoint<SteadyClock, NanoSecond> end;
+  NanoSecond accumilator(0);
 
   while (running) {
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    cur_scene->render();
+    current_scene->render();
     glfwSwapBuffers(window);
 
-    if (acc_t > core::TICK_RATE_NANO) {
+    if (accumilator > TICK_RATE) {
       glfwPollEvents();
-      acc_t -= core::TICK_RATE_NANO;
+      accumilator -= TICK_RATE;
     }
 
-    end_t = tm::steady_clock::now();
-    acc_t += (end_t - start_t).count();
-    delta_t = tm::duration<float>(end_t - start_t).count();
-    start_t = end_t;
+    end = SteadyClock::now();
+    accumilator += end - start;
+    delta = end - start;
+    start = end;
   }
 }
 
 static void update() {
-  auto start_t = tm::steady_clock::now();
-  auto end_t = start_t;
-  long acc_t = 0;
+  TimePoint<SteadyClock, NanoSecond> start = SteadyClock::now();
+  TimePoint<SteadyClock, NanoSecond> end;
+  NanoSecond accumilator(0);
 
   while (running) {
-    if (acc_t > core::TICK_RATE_NANO) {
-      cur_scene->update(delta_t);
-      acc_t -= core::TICK_RATE_NANO;
+    if (accumilator > TICK_RATE) {
+      current_scene->update(delta);
+      accumilator -= TICK_RATE;
     }
 
-    end_t = tm::steady_clock::now();
-    acc_t += (end_t - start_t).count();
-    start_t = end_t;
+    end = SteadyClock::now();
+    accumilator += end - start;
+    start = end;
   }
 }
 
-void set_scene(scene::Type *s) { cur_scene = s; }
+void set_scene(scene::Object *scene) { current_scene = scene; }
 void close() { running = false; }
 bool nop() { return true; }
 void null() {}
@@ -129,8 +128,8 @@ int main() {
   render();
   update_thread.join();
 
-  for (const auto s : scene::REFS) {
-    s->clean();
+  for (const auto scene : scene::REFERENCES) {
+    scene->clean();
   }
 
   glfwDestroyWindow(window);

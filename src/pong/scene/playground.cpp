@@ -1,3 +1,5 @@
+#define GLFW_INCLUDE_NONE
+
 #include "scene.hpp"
 #include <callbacks.hpp>
 #include <core.hpp>
@@ -62,7 +64,7 @@ static void render() {
   glBindVertexArray(0);
 }
 
-static void update(float delta_t) {}
+static void update(SecondDecimal delta) {}
 
 static void clean() {
   glDeleteVertexArrays(1, &vao);
@@ -71,5 +73,5 @@ static void clean() {
 }
 
 namespace scene {
-const Type PLAYGROUND{init, render, update, core::null, clean};
+const Object PLAYGROUND{init, render, update, clean};
 }

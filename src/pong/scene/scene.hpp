@@ -1,15 +1,15 @@
 #pragma once
-#define GLFW_INCLUDE_NONE
+
+#include <def.hpp>
 
 namespace scene {
-struct Type {
-  bool (*init)();
-  void (*render)();
-  void (*update)(float delta_t);
-  void (*update_gl)();
-  void (*clean)();
+struct Object {
+  Function<bool()> init;
+  Function<void()> render;
+  Function<void(SecondDecimal delta)> update;
+  Function<void()> clean;
 };
 
-extern const Type PLAYGROUND;
-inline const Type *REFS[] = {&PLAYGROUND};
+extern const Object PLAYGROUND;
+inline const Object *REFERENCES[] = {&PLAYGROUND};
 } // namespace scene

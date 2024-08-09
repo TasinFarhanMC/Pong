@@ -2,6 +2,8 @@
 
 cd $(dirname $0)
 
+[[ ! -d "build" ]] && mkdir build
+
 CMAKE_CMD="cmake . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
 
 for arg in $@; do
